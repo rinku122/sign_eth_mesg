@@ -7,10 +7,6 @@ import abi from "./SimpleSignatureVerifierABI.json";
 const App = () => {
   const [web3, setWeb3] = useState(null);
   const [account, setAccount] = useState("");
-  const [message, setMessage] = useState("");
-  const [signature, setSignature] = useState("");
-  const [signerAddress, setSignerAddress] = useState("");
-  const [isValid, setIsValid] = useState(null);
 
   // Initialize web3
   const initializeWeb3 = async () => {
@@ -26,106 +22,53 @@ const App = () => {
     }
   };
 
-  // Sign a message
-  //message to be generated from backend uniquely every time. Its like a session. user comes and
-    //suppose click login , a request will go to backend, it will send a mesg back, now this mesg will be
-    //signed by user(with metamask) and and this signed mesg along with mesg and user address will  got to backend. Now in backend a fucntion 
-    //will be there verifySignature (made below not to be made on frontend) which will use the signature and  mesg to get the 
-    //user address. Now this user address if is same that is coming with  api. We will know that the user address coming in api is same that is conneted with
-    //metamsk. Suppose on opensea one is changing profile name, it would be a good use case there. (Basicall to know if the user is the one who he is claiming.)
-  const signMessage = async () => {
-    if (!web3 || !message) return;
+  async function mint() {
+    const myContract = new web3.eth.Contract(
+      abi,
+      "0xaaB8199a4cd01518Ed4a493A1749F06bE6b50edd"
+    );
 
-    const messageHash = web3.utils.keccak256(message);
+    //First use case : lazyminting
+    //Below is hardcoded, but we will receive this from backend. Suppose after login flow (i.e also with sign message done in master branch ) req come to backend then on backend
+    //we will generarate a the below array and send on frontend. this transaction will be signed at backend pvt key but will be executed by wallet holder on frontend
+    //This is lazyminting
 
-    const signature = await window.ethereum.request({
-      method: "personal_sign",
-      params: [messageHash, account],
-    });
-    console.log("signature  : ", signature);
-    setSignature(signature);
-  };
+    //Second use case : White listing a lot of user with some amount of NFTs
+    //So the whole flow of application is below
+    //User will login it is disscussed in master branch. We will having addressess and amount in our db. Loggedin Flow
+    // So user that is coming is now logged in. He will now press claim, so as soon as he press claim he an api is called, we check is this is whitelisted by
+    // admin or not. If it is whitelisted there will an ebtry of address quantity (For our case let we have assumed that it is one every time. But it can be multiple). I will 
+    //prepare the below struct give the next tokenId, amount of eth (price of nft) , tokenUri, userAddress(whom to pay), make a signature of that and return in 
+    //Api . This will be now executed by the wallet holder on frintend and he will receive the NFT. We can white list as many number of NFTs like 10000 NFTS
+    //to multiple user. We can mint multiple number of NFTs to a single user. Manipulate the struct accordingley
 
-  // Verify the signature with the smart contract
-  const verifySignature = async () => {
-    if (!web3 || !message || !signature || !signerAddress) return;
-    console.log(signerAddress, message, signature);
 
-    try {
-      //>>>>>>>>>>With help of contract
 
-      // const contract = new web3.eth.Contract(
-      //   abi,
-      //   "0x5Bd9e60A07145a69543655E6fBeC7b841Dfce24C"
-      // );
-      // const blockNumber = await web3.eth.getGasPrice();
-      // console.log(blockNumber);
-      // const isValid = await contract.methods
-      //   .verifySignature(signerAddress, message, signature)
-      //   .call();
+    //Now taken from index.js outside src folder. 
+    const args = [
+      29,
+      50,
+      "uri",
+      "0xdD2FD4581271e230360230F9337D5c0430Bf44C0",
+      "0xa8e57709dacca3a46d74f2e2d3a5f15c399d6012a5a91f3ddebf04ca435c25de217ab782ef63d5cbddb2f71d3182821b09ed4a1ea11141b36197c340bb226cf31c",
+    ];
+    const tx = myContract.methods.safeMint(args);
+    const value = "50";
+    const gas = await tx.estimateGas({ from: account, value });
 
-      //Can be done with web3(as no need to call contract so better)
+    const gasPrice = await web3.eth.getGasPrice();
 
-      const messageHash = web3.utils.keccak256(message);
+    const result = await tx.send({ from: account, value, gas, gasPrice });
 
-      // Recover the signer address from the message and signature
-      const recoveredAddress = web3.eth.accounts.recover(
-        messageHash,
-        signature
-      );
-
-      console.log("Recovered Address: ", recoveredAddress);
-
-      // Check if the recovered address matches the provided signer address
-      const isValid =
-        recoveredAddress.toLowerCase() === signerAddress.toLowerCase();
-
-      setIsValid(isValid);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+    console.log(result, "+++++++++++++++++++++++++++++");
+  }
 
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
       <p>{account ? account : ""}</p>
-      <h1>Signature Verifier</h1>
+
       <button onClick={initializeWeb3}>Connect MetaMask</button>
-      <br />
-      <br />
-      <input
-        type="text"
-        placeholder="Message to Sign"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        style={{ marginBottom: "10px", width: "300px" }}
-      />
-      <br />
-      <button onClick={signMessage}>Sign Message</button>
-      <br />
-      <br />
-      <input
-        type="text"
-        placeholder="Signature"
-        value={signature}
-        readOnly
-        style={{ marginBottom: "10px", width: "300px" }}
-      />
-      <br />
-      <input
-        type="text"
-        placeholder="Signer Address"
-        value={signerAddress}
-        onChange={(e) => setSignerAddress(e.target.value)}
-        style={{ marginBottom: "10px", width: "300px" }}
-      />
-      <br />
-      <button onClick={verifySignature}>Verify Signature</button>
-      <br />
-      <br />
-      {isValid !== null && (
-        <p>{isValid ? "Valid Signature!" : "Invalid Signature!"}</p>
-      )}
+      <button onClick={mint}>Mint</button>
     </div>
   );
 };
