@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Web3 from "web3";
+import abi from "./SimpleSignatureVerifierABI.json";
 
 // Replace with your deployed contract address
 
@@ -45,138 +46,33 @@ const App = () => {
     console.log(signerAddress, message, signature);
 
     try {
-      const contract = new web3.eth.Contract(
-        [
-          {
-            inputs: [
-              {
-                internalType: "bytes32",
-                name: "_messageHash",
-                type: "bytes32",
-              },
-            ],
-            name: "getEthSignedMessageHash",
-            outputs: [
-              {
-                internalType: "bytes32",
-                name: "",
-                type: "bytes32",
-              },
-            ],
-            stateMutability: "pure",
-            type: "function",
-          },
-          {
-            inputs: [
-              {
-                internalType: "string",
-                name: "_message",
-                type: "string",
-              },
-            ],
-            name: "getMessageHash",
-            outputs: [
-              {
-                internalType: "bytes32",
-                name: "",
-                type: "bytes32",
-              },
-            ],
-            stateMutability: "pure",
-            type: "function",
-          },
-          {
-            inputs: [
-              {
-                internalType: "bytes32",
-                name: "_ethSignedMessageHash",
-                type: "bytes32",
-              },
-              {
-                internalType: "bytes",
-                name: "_signature",
-                type: "bytes",
-              },
-            ],
-            name: "recoverSigner",
-            outputs: [
-              {
-                internalType: "address",
-                name: "",
-                type: "address",
-              },
-            ],
-            stateMutability: "pure",
-            type: "function",
-          },
-          {
-            inputs: [
-              {
-                internalType: "bytes",
-                name: "_signature",
-                type: "bytes",
-              },
-            ],
-            name: "splitSignature",
-            outputs: [
-              {
-                internalType: "bytes32",
-                name: "r",
-                type: "bytes32",
-              },
-              {
-                internalType: "bytes32",
-                name: "s",
-                type: "bytes32",
-              },
-              {
-                internalType: "uint8",
-                name: "v",
-                type: "uint8",
-              },
-            ],
-            stateMutability: "pure",
-            type: "function",
-          },
-          {
-            inputs: [
-              {
-                internalType: "address",
-                name: "_signer",
-                type: "address",
-              },
-              {
-                internalType: "string",
-                name: "_message",
-                type: "string",
-              },
-              {
-                internalType: "bytes",
-                name: "_signature",
-                type: "bytes",
-              },
-            ],
-            name: "verifySignature",
-            outputs: [
-              {
-                internalType: "bool",
-                name: "",
-                type: "bool",
-              },
-            ],
-            stateMutability: "pure",
-            type: "function",
-          },
-        ],
-        "0x5Bd9e60A07145a69543655E6fBeC7b841Dfce24C"
-      );
-      const blockNumber = await web3.eth.getGasPrice();
-      console.log(blockNumber);
-      const isValid = await contract.methods
-        .verifySignature(signerAddress, message, signature)
-        .call();
+      //>>>>>>>>>>With help of contract
 
-      console.log(isValid, "isValid");
+      // const contract = new web3.eth.Contract(
+      //   abi,
+      //   "0x5Bd9e60A07145a69543655E6fBeC7b841Dfce24C"
+      // );
+      // const blockNumber = await web3.eth.getGasPrice();
+      // console.log(blockNumber);
+      // const isValid = await contract.methods
+      //   .verifySignature(signerAddress, message, signature)
+      //   .call();
+
+      //but can be done with web3 also
+
+      const messageHash = web3.utils.keccak256(message);
+
+      // Recover the signer address from the message and signature
+      const recoveredAddress = web3.eth.accounts.recover(
+        messageHash,
+        signature
+      );
+
+      console.log("Recovered Address: ", recoveredAddress);
+
+      // Check if the recovered address matches the provided signer address
+      const isValid =
+        recoveredAddress.toLowerCase() === signerAddress.toLowerCase();
 
       setIsValid(isValid);
     } catch (error) {
