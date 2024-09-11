@@ -27,6 +27,12 @@ const App = () => {
   };
 
   // Sign a message
+  //message to be generated from backend uniquely every time. Its like a session. user comes and
+    //suppose click login , a request will go to backend, it will send a mesg back, now this mesg will be
+    //signed by user(with metamask) and and this signed mesg along with mesg and user address will  got to backend. Now in backend a fucntion 
+    //will be there verifySignature (made below not to be made on frontend) which will use the signature and  mesg to get the 
+    //user address. Now this user address if is same that is coming with  api. We will know that the user address coming in api is same that is conneted with
+    //metamsk. Suppose on opensea one is changing profile name, it would be a good use case there. (Basicall to know if the user is the one who he is claiming.)
   const signMessage = async () => {
     if (!web3 || !message) return;
 
@@ -58,7 +64,7 @@ const App = () => {
       //   .verifySignature(signerAddress, message, signature)
       //   .call();
 
-      //but can be done with web3 also
+      //Can be done with web3(as no need to call contract so better)
 
       const messageHash = web3.utils.keccak256(message);
 
